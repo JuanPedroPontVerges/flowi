@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Mushi - Juanshi Traker 🍄‍🟫🐨",
+  title: "Mushi - Juanshi Tracker 🍄‍🟫🐨",
   description: "Everyday that goes by, Juanshi gets closer to Mushi hunter",
 };
 
