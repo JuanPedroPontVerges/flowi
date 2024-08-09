@@ -1,4 +1,3 @@
-// app/components/Map.tsx
 'use client';
 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
@@ -7,10 +6,10 @@ import L from 'leaflet';
 
 const startCoords: [number, number] = [-31.4201, -64.1888]; // Córdoba, Argentina
 const parisCoords: [number, number] = [48.8566, 2.3522]; // Paris, France
-const targetDate = new Date('2024-10-11');
-const today = new Date();
+const startDate = new Date('2024-07-28'); // YYYY-MM-DD format
+const targetDate = new Date('2024-10-11'); // YYYY-MM-DD format
 
-const daysUntilTarget = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+const daysUntilTarget = Math.ceil((targetDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
 const totalDistance: [number, number] = [
     parisCoords[0] - startCoords[0],
     parisCoords[1] - startCoords[1],
@@ -25,30 +24,30 @@ const calculatePosition = (days: number): [number, number] => {
     return [startCoords[0] + latDiff * days, startCoords[1] + lngDiff * days];
 };
 
-const Map: React.FC = () => {
-    const [days, setDays] = useState(0);
+interface MapProps {
+    mockCurrentDate?: Date; // Optional prop to mock the current date
+}
+
+const Map: React.FC<MapProps> = ({ mockCurrentDate }) => {
     const [currentPosition, setCurrentPosition] = useState<[number, number]>(startCoords);
 
     useEffect(() => {
-        const storedDays = localStorage.getItem('days');
-        if (storedDays) {
-            const parsedDays = parseInt(storedDays, 10);
-            setDays(parsedDays);
-            setCurrentPosition(calculatePosition(parsedDays));
-        }
+        const updatePosition = () => {
+            const today = mockCurrentDate || new Date(); // Use mock date if provided
+            const elapsedDays = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
+            
+            // Update the current position based on elapsed days
+            setCurrentPosition(calculatePosition(elapsedDays));
+        };
 
-        const interval = setInterval(() => {
-            setDays((prevDays) => {
-                const newDays = prevDays + 1;
-                const newPosition = calculatePosition(newDays);
-                setCurrentPosition(newPosition);
-                localStorage.setItem('days', newDays.toString());
-                return newDays;
-            });
-        }, 86400000); // 24 hours in milliseconds
+        // Initial position update
+        updatePosition();
+
+        // Update position daily
+        const interval = setInterval(updatePosition, 86400000); // 24 hours in milliseconds
 
         return () => clearInterval(interval);
-    }, []);
+    }, [mockCurrentDate]);
 
     // Custom icon for your image
     const yourIcon = new L.Icon({
@@ -64,7 +63,10 @@ const Map: React.FC = () => {
         iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
     });
 
-    const daysLeft = daysUntilTarget - days;
+    const today = mockCurrentDate || new Date(); // Use mock date if provided
+    const elapsedDays = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
+    const daysLeft = Math.max(0, daysUntilTarget - elapsedDays);
+
     return (
         <div className="relative h-screen w-full">
             <div className="h-full w-full">
