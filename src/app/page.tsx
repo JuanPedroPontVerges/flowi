@@ -5,8 +5,7 @@ import dynamic from 'next/dynamic';
 const Map = dynamic(() => import('./components/map'), { ssr: false });
 
 const Home: React.FC = () => {
-  // const mockDate = new Date('2024-09-15'); // Adjust as needed for testing
-
+  // const mockDate = new Date('2024-09-02'); // Adjust as needed for testing
   return (
     <div>
       <Head>

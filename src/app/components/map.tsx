@@ -24,18 +24,31 @@ const calculatePosition = (days: number): [number, number] => {
     return [startCoords[0] + latDiff * days, startCoords[1] + lngDiff * days];
 };
 
-interface MapProps {
-    mockCurrentDate?: Date; // Optional prop to mock the current date
-}
+// Function to check if the position is in the Atlantic Ocean
+const isInAtlanticOcean = (position: [number, number]): boolean => {
+    const [lat, lng] = position;
 
-const Map: React.FC<MapProps> = ({ mockCurrentDate }) => {
+    // Define the rough bounding box of the Atlantic Ocean
+    const atlanticBounds = [
+        { minLat: 0, maxLat: 40, minLng: -60, maxLng: -20 },  // South Atlantic
+        { minLat: 40, maxLat: 60, minLng: -50, maxLng: 0 },   // North Atlantic
+    ];
+
+    // Check if position is within any of the defined boxes
+    return atlanticBounds.some(
+        (box) => lat >= box.minLat && lat <= box.maxLat && lng >= box.minLng && lng <= box.maxLng
+    );
+};
+
+
+const Map: React.FC<{ mockCurrentDate?: Date }> = ({ mockCurrentDate }) => {
     const [currentPosition, setCurrentPosition] = useState<[number, number]>(startCoords);
 
     useEffect(() => {
         const updatePosition = () => {
             const today = mockCurrentDate || new Date(); // Use mock date if provided
             const elapsedDays = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
-            
+
             // Update the current position based on elapsed days
             setCurrentPosition(calculatePosition(elapsedDays));
         };
@@ -49,19 +62,22 @@ const Map: React.FC<MapProps> = ({ mockCurrentDate }) => {
         return () => clearInterval(interval);
     }, [mockCurrentDate]);
 
-    // Custom icon for your image
-    const yourIcon = new L.Icon({
-        iconUrl: '/juan.png', // Replace with your image path
-        iconSize: [50, 50], // Size of the icon
-        iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
-    });
+    // Define custom icon with CSS rotation
+    const customIcon = (isInOcean: boolean) => {
+        const iconUrl = isInOcean ? '/juan.png' : '/juan.png'; // Replace with your image path
+        const rotation = isInOcean ? 'rotate(-30deg)' : 'none'; // Tilt image for ocean
 
-    // Custom icon for your girlfriend's image
-    const girlfriendIcon = new L.Icon({
-        iconUrl: '/flo.png', // Replace with your girlfriend's image path
-        iconSize: [50, 50], // Size of the icon
-        iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
-    });
+        return new L.Icon({
+            iconUrl,
+            iconSize: [50, 50], // Size of the icon
+            iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
+            className: `custom-icon ${isInOcean ? 'in-ocean' : ''}`,
+            html: `<div style="transform: ${rotation}; width: 100%; height: 100%; background-image: url(${iconUrl}); background-size: cover; background-position: center;"></div>`,
+        });
+    };
+
+    const isInOcean = isInAtlanticOcean(currentPosition);
+    const markerIcon = customIcon(isInOcean);
 
     const today = mockCurrentDate || new Date(); // Use mock date if provided
     const elapsedDays = Math.max(0, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 3600 * 24)));
@@ -76,13 +92,17 @@ const Map: React.FC<MapProps> = ({ mockCurrentDate }) => {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     {/* Your moving position */}
-                    <Marker position={currentPosition} icon={yourIcon}>
+                    <Marker position={currentPosition} icon={markerIcon}>
                         <Popup>
                             <span>{daysLeft} jours restants !!</span>
                         </Popup>
                     </Marker>
                     {/* Girlfriend's fixed position */}
-                    <Marker position={parisCoords} icon={girlfriendIcon}>
+                    <Marker position={parisCoords} icon={new L.Icon({
+                        iconUrl: '/flo.png', // Replace with your girlfriend's image path
+                        iconSize: [50, 50], // Size of the icon
+                        iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
+                    })}>
                         <Popup>
                             <span>Mushi hunter 🍄‍🟫🍄</span>
                         </Popup>
