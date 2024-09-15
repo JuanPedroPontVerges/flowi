@@ -43,6 +43,10 @@ const isInAtlanticOcean = (position: [number, number]): boolean => {
 
 const Map: React.FC<{ mockCurrentDate?: Date }> = ({ mockCurrentDate }) => {
     const [currentPosition, setCurrentPosition] = useState<[number, number]>(startCoords);
+    const [showInput, setShowInput] = useState(false);
+    const [question, setQuestion] = useState('');
+    const [answer, setAnswer] = useState('');
+    const [context, setContext] = useState('Flo is the most amazing girl ive ever met in my life. She loves writing letters, drawing and painting, everything soup related, hippie fairs, meeting new people. She absolutely loves travelling and also all mushroom related. Flo, also floflo, or mushi, or bebou, or mitshubishi is the love of my life. She hasnt spent a day in her life without doing a thats what she said joke. She also studied tourism and works in Paris Tower Eiffel as a tour guide! Loves vintage things and old lady activities. Also dreams about being a mushi-hunter');
 
     useEffect(() => {
         const updatePosition = () => {
@@ -61,6 +65,32 @@ const Map: React.FC<{ mockCurrentDate?: Date }> = ({ mockCurrentDate }) => {
 
         return () => clearInterval(interval);
     }, [mockCurrentDate]);
+
+
+    const handleMarkerClick = () => {
+        setShowInput(true);
+    };
+
+    const handleQuestionSubmit = async () => {
+        try {
+            const response = await fetch('/api/claude', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ question, context }),
+            });
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            console.log(data)
+            setAnswer(data.answer[0].text);
+        } catch (error) {
+            console.error('Error fetching answer:', error);
+            setAnswer('Sorry, there was an error getting the answer.');
+        }
+    };
 
     // Define custom icon with CSS rotation
     const customIcon = (isInOcean: boolean) => {
@@ -92,9 +122,32 @@ const Map: React.FC<{ mockCurrentDate?: Date }> = ({ mockCurrentDate }) => {
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     />
                     {/* Your moving position */}
-                    <Marker position={currentPosition} icon={markerIcon}>
-                        <Popup>
-                            <span>{daysLeft} jours restants !!</span>
+                    <Marker position={currentPosition} icon={markerIcon} eventHandlers={{ click: handleMarkerClick }}>
+                        <Popup className='w-64'>
+                            <div>
+                                {showInput && (
+                                    <div className="mt-2">
+                                        <input
+                                            type="text"
+                                            value={question}
+                                            onChange={(e) => setQuestion(e.target.value)}
+                                            placeholder="Ask about Flo..."
+                                            className="w-full p-1 border rounded"
+                                        />
+                                        <button
+                                            onClick={handleQuestionSubmit}
+                                            className="mt-1 px-2 py-1 bg-blue-500 text-white rounded"
+                                        >
+                                            Ask
+                                        </button>
+                                    </div>
+                                )}
+                                {answer && (
+                                    <div className="mt-2">
+                                        <strong>Answer:</strong> {answer}
+                                    </div>
+                                )}
+                            </div>
                         </Popup>
                     </Marker>
                     {/* Girlfriend's fixed position */}
@@ -104,7 +157,7 @@ const Map: React.FC<{ mockCurrentDate?: Date }> = ({ mockCurrentDate }) => {
                         iconAnchor: [25, 50], // Point of the icon which will correspond to marker's location
                     })}>
                         <Popup>
-                            <span>Mushi hunter 🍄‍🟫🍄</span>
+                            <span>{daysLeft} jours restants !!</span>
                         </Popup>
                     </Marker>
                 </MapContainer>
